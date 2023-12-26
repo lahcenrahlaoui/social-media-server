@@ -8,6 +8,7 @@ const cors = require("cors");
 // import routes
 const postRoutes = require("./routes/postRoute");
 const commentRoute = require("./routes/commentRoute");
+const authRoute = require("./routes/authRoute");
 // initialise the app
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/home", (req, res) => {
     });
 });
 
+app.use("/auth", authRoute);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoute);
 

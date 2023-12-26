@@ -6,10 +6,14 @@ const { getOneComment , getComments, getCommentsByPost, createComment } = requir
 
 
 // get all posts
-router.post("/:postId/:userId", createComment);
+router.post("/newComment/:postId/:userId", createComment);
 router.get("/", getComments);
 router.get("/post/", getCommentsByPost);
 router.get("/:_id", getOneComment);
+
+
+
+
 
 // // get one post
 // router.get("/:id", getOnePost);

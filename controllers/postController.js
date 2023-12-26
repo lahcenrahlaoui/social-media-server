@@ -4,23 +4,9 @@ const sharp = require("sharp");
 const Post = require("../models/postModel");
 const Comment = require("../models/commentModel");
 
-// cloudinary config
-const cloudinary = require("cloudinary").v2;
-cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.API_KEY,
-    api_secret: process.env.API_SECRET,
-});
+const { uploadToCloudinary } = require("../cloudinaryConfig");
 
-// upload to cloudinary
-const uploadToCloudinary = async (path) => {
-    const result = await cloudinary.uploader.upload(path, (err, result) => {
-        if (err) {
-            console.log(err);
-        }
-    });
-    return result.secure_url;
-};
+
 
 // get all posts
 const getAllPosts = async (req, res) => {
@@ -29,7 +15,7 @@ const getAllPosts = async (req, res) => {
         console.log(posts);
         res.send(posts.reverse());
     } catch (err) {
-        res.json(err.message);
+        res.status(400).json({ error: err.message });
     }
 };
 
@@ -89,12 +75,15 @@ const resizeImage = async (req, data) => {
     data.image_small = await uploadToCloudinary(path_small);
 
     // remove small image
-    fs.unlink(path_small, (err) => {
-        if (err) {
-            throw err;
-        }
-        console.log("Delete File successfully small ");
+    fs.access(path_small, fs.F_OK, async (err, ac) => {
+        fs.unlink(path_small, (ferr, fc) => {
+            if (err) {
+                throw err;
+            }
+            console.log("Delete File successfully. ");
+        });
     });
+
     // remove thumbnail image
     fs.unlink(path_thumbnail, (err) => {
         if (err) {

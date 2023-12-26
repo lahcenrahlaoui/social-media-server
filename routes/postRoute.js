@@ -11,11 +11,14 @@ const {
     getOneImage , 
     uploadImage
 } = require("../controllers/postController");
+const { requireAuth } = require("../middlewares/requireAuth");
 
 const router = express.Router();
 
+router.use(requireAuth)
+
 // get all posts
-router.get("/", getAllPosts);
+router.get("/",  getAllPosts);
 
 // get one post
 router.get("/:id", getOnePost);

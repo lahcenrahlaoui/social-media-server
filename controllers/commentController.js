@@ -8,7 +8,6 @@ const Post = require("../models/postModel");
 const createComment = async (req, res) => {
     const { postId, userId } = req.params;
     const dataBody = req.body;
-    console.log("----------------");
 
     const com = {
         content: dataBody.content,
@@ -61,12 +60,10 @@ const getOneComment = async (req, res) => {
 const getCommentsByPost = async (req, res) => {
     const { postId } = req.query;
     const skip = parseInt(req.query.skip);
-console.log(skip)
+    console.log(skip);
     try {
-        const comments = await Comment.find({ postId })
-            .skip(skip)
-            .limit((3));
-        console.log(comments)
+        const comments = await Comment.find({ postId }).skip(skip).limit(3);
+
         res.send(comments);
     } catch (err) {
         res.json(err.message);

@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@img/sharp-win32-x64": "^0.33.0",
+    "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cloudinary": "^1.41.0",
     "cors": "^2.8.5",
@@ -22,6 +23,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.0.2",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "validator": "^13.11.0"
   }
 }
