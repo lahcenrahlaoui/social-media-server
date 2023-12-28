@@ -25,7 +25,7 @@ const createComment = async (req, res) => {
             { $push: { comments: comment } }
         );
 
-        console.log(userId);
+
         const user = await User.findOne({ _id: userId });
 
         const item = {
@@ -35,8 +35,8 @@ const createComment = async (req, res) => {
             image: user.image,
             name: user.name,
         };
-        console.log("item999999999999");
-        console.log(item);
+ 
+        
         res.json(item);
     } catch (err) {
         res.send(err.message);
@@ -49,8 +49,8 @@ const getComments = async (req, res) => {
 
     try {
         const comments = await Comment.find({ _id }).limit(3);
-        // const user = await User.find({})
-        console.log(comments);
+
+        
         res.send(comments);
     } catch (err) {
         res.json(err.message);
@@ -63,7 +63,8 @@ const getOneComment = async (req, res) => {
 
     try {
         const comment = await Comment.findOne({ _id });
-        console.log(comment);
+     
+        
         res.send(comment);
     } catch (err) {
         res.json(err.message);
@@ -77,7 +78,8 @@ const getCommentsByPost = async (req, res) => {
 
     try {
         const comments = await Comment.find({ postId }).skip(skip).limit(3);
-        console.log(comments);
+     
+        
 
         const results = [];
         for (let i = 0; i < comments.length; i++) {

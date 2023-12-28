@@ -30,9 +30,7 @@ const storage = multer.diskStorage({
             .split(".")
             .join("")
             .replace(/:/gi, "-");
-        console.log("***************************************")
-        console.log("***************************************")
-        console.log("***************************************")
+     
         cb(null, string + "--" + file.originalname);
     },
 });

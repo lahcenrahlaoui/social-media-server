@@ -55,8 +55,20 @@ const resizeImage = async (req, data) => {
 
 // get all posts
 const getAllPosts = async (req, res) => {
+    const { _id } = req.user;
+
     try {
-        const posts = await Post.find({});
+        const { following } = await User.findOne({ _id }).select("following");
+        console.log(following);
+
+        const posts = [];
+        for (let i = 0; i < following.length; i++) {
+            const x = await Post.find({ userId: following[i] });
+            x.map((item) => posts.push(item));
+        }
+        console.log("posts");
+        console.log(posts);
+        // const posts = await Post.find({ userId: following[0] });
 
         const results = [];
         for (let i = 0; i < posts.length; i++) {
@@ -100,14 +112,6 @@ const getOnePost = async (req, res) => {
 // get only the image
 const getOneImage = async (req, res) => {
     const { _id } = req.params;
-
-    console.log("_id888888888888888888888888");
-    console.log("_id888888888888888888888888");
-    console.log("_id888888888888888888888888");
-    console.log("_id888888888888888888888888");
-    console.log("_id888888888888888888888888");
-    console.log("_id888888888888888888888888");
-    console.log(_id);
 
     let image = undefined;
     try {
@@ -196,14 +200,15 @@ const updatePost = async (req, res) => {
 
 // update likes
 const updateLikes = async (req, res) => {
-    const randUser = req.user._id;
+    const userId = req.user._id;
     const { _id } = req.params;
-    console.log(randUser);
 
     try {
         const postx = await Post.findOne({ _id });
         let post;
+        const user = await User.findOne({ _id: userId });
 
+        const randUser = user.email;
         if (!postx.likes.includes(randUser)) {
             post = await Post.findOneAndUpdate(
                 { _id },
@@ -217,6 +222,19 @@ const updateLikes = async (req, res) => {
             );
             post.likes.pull(randUser);
         }
+        // if (!postx.likes.includes(randUser)) {
+        //     post = await Post.findOneAndUpdate(
+        //         { _id },
+        //         { $push: { likes: randUser } }
+        //     );
+        //     post.likes.push(randUser);
+        // } else {
+        //     post = await Post.findOneAndUpdate(
+        //         { _id },
+        //         { $pull: { likes: randUser } }
+        //     );
+        //     post.likes.pull(randUser);
+        // }
 
         res.send(post);
     } catch (err) {

@@ -22,6 +22,7 @@ const loginUser = async (req, res) => {
             email,
             image: user.image,
             name: user.name,
+            following: user.following,
             token,
         });
     } catch (error) {
@@ -33,7 +34,7 @@ const loginUser = async (req, res) => {
 const signupUser = async (req, res) => {
     const { email, password, name } = req.body;
 
-    console.log(email, password, name);
+    
 
     const path_normal = req.file.path;
 
@@ -45,8 +46,9 @@ const signupUser = async (req, res) => {
 
         res.json({
             email,
-            image,
-            name,
+            image: user.image,
+            name: user.name,
+            following: user.following,
             token,
         });
     } catch (err) {

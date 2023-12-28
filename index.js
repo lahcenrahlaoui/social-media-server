@@ -10,6 +10,7 @@ const postRoutes = require("./routes/postRoute");
 const commentRoute = require("./routes/commentRoute");
 const authRoute = require("./routes/authRoute");
 const suggestionRoute = require("./routes/suggestionRoute");
+const userRoute = require("./routes/userRoute");
 // initialise the app
 const app = express();
 // to delete old results
@@ -34,6 +35,7 @@ app.use("/home", (req, res) => {
 });
 
 app.use("/auth", authRoute);
+app.use("/api/user", userRoute);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoute);
 

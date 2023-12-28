@@ -17,7 +17,12 @@ const userSchema = new Schema(
             required: true,
         },
         image: { type: String, required: true },
-
+        following: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
         date: String,
         status: String,
     },

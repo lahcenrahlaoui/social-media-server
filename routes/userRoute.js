@@ -1,9 +1,8 @@
 // imports
 const express = require("express");
 
-const { suggestions } = require("../controllers/suggestionsController");
+const { setFollowingList , getFollowingList } = require("../controllers/usercontroller");
 const { requireAuth } = require("../middlewares/requireAuth");
- 
 
 // config
 const router = express.Router();
@@ -11,6 +10,8 @@ const router = express.Router();
 // middleware
 router.use(requireAuth);
 
-router.get("/suggestions", suggestions);
+router.get("/get/following", getFollowingList);
+
+router.patch("/set/following", setFollowingList);
 
 module.exports = router;
