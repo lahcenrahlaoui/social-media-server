@@ -27,6 +27,8 @@ app.use(
         credentials: true,
     })
 );
+app.set("trust proxy", 1);
+
 
 // constants
 const MONGO_URL = process.env.MONGO_URL;
@@ -38,6 +40,7 @@ app.use("/home", (req, res) => {
         message: "message sucsses",
     });
 });
+
 
 app.use("/auth", authRoute);
 app.use("/api/user", userRoute);
