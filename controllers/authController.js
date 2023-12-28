@@ -1,6 +1,6 @@
-const fs = require("fs");
-const mongoose = require("mongoose");
-const sharp = require("sharp");
+
+
+
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/userModel");

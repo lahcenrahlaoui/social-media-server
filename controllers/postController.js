@@ -1,9 +1,9 @@
 const fs = require("fs");
-const mongoose = require("mongoose");
-const sharp = require("sharp");
+
 const Post = require("../models/postModel");
 const User = require("../models/userModel");
-const Comment = require("../models/commentModel");
+
+const jimp = require("jimp");
 
 const { uploadToCloudinary } = require("../config");
 
@@ -22,16 +22,22 @@ const resizeImage = async (req, data) => {
     const path_normal = req.file.path;
     const path_thumbnail =
         req.file.path.split("--")[0] + "_thumbnail_" + req.file.originalname;
-    await sharp(path_normal)
-        .resize(size_thumbnail.w, size_thumbnail.h)
-        .toFile(path_thumbnail);
+
+    const image_normal = await jimp.read(path_normal);
+    await image_normal.resize(5, jimp.AUTO);
+    await image_normal.writeAsync(path_thumbnail);
+
     data.image_thumbnail = await uploadToCloudinary(path_thumbnail);
 
     const path_small =
         req.file.path.split("--")[0] + "_small_" + req.file.originalname;
-    await sharp(path_normal)
-        .resize(size_small.w, size_small.h)
-        .toFile(path_small);
+
+    const image_normal2 = await jimp.read(path_normal);
+    await image_normal2.resize(50, jimp.AUTO);
+    await image_normal2.writeAsync(path_small);
+
+    //////// end
+
     data.image_small = await uploadToCloudinary(path_small);
 
     // remove small image
