@@ -1,6 +1,5 @@
 const express = require("express");
-const multer = require("multer");
-
+const { upload } = require("../config");
 const {
     getAllPosts,
     getOnePost,
@@ -8,51 +7,34 @@ const {
     deletePost,
     updatePost,
     updateLikes,
-    getOneImage , 
-    uploadImage
+    getOneImage,
+    uploadImage,
 } = require("../controllers/postController");
 const { requireAuth } = require("../middlewares/requireAuth");
 
 const router = express.Router();
 
-router.use(requireAuth)
+// middleware
+router.use(requireAuth);
 
 // get all posts
-router.get("/",  getAllPosts);
+router.get("/", getAllPosts);
 
 // get one post
 router.get("/:id", getOnePost);
 
 // get image one post
-router.get("/image/:id", getOneImage);
+router.get("/image/:_id", getOneImage);
 
 // create one post
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, "./public/temp/");
-    },
-    filename: function (req, file, cb) {
-        const string = new Date()
-            .toISOString()
-            .split(".")
-            .join("")
-            .replace(/:/gi, "-");
 
-        cb(null, string + "--" + file.originalname);
-    },
-});
-
-// const storage = new multer.memoryStorage()das;
-const upload = multer({ storage: storage });
 router.post("/", upload.single("image"), createPost);
 
+// to load high quality image
 router.patch("/:id", upload.single("image"), uploadImage);
 
-// update one post
-// router.patch("/:id", updatePost);
-
-// update one post
-router.patch("/:id/likes", updateLikes);
+// update likes in the post
+router.patch("/:_id/likes", updateLikes);
 
 // delete one post
 router.delete("/:id", deletePost);

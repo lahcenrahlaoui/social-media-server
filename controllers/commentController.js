@@ -3,14 +3,16 @@ const mongoose = require("mongoose");
 
 const Comment = require("../models/commentModel");
 const Post = require("../models/postModel");
+const User = require("../models/userModel");
 
-// get all comments
+// create comments
 const createComment = async (req, res) => {
-    const { postId, userId } = req.params;
-    const dataBody = req.body;
+    const userId = req.user?._id;
+    const { postId } = req.params;
 
+    
     const com = {
-        content: dataBody.content,
+        content: req.body.content,
         postId,
         userId,
     };
@@ -23,20 +25,31 @@ const createComment = async (req, res) => {
             { $push: { comments: comment } }
         );
 
-        console.log(post);
+        console.log(userId);
+        const user = await User.findOne({ _id: userId });
 
-        res.json(comment);
+        const item = {
+            postId: comment.postId,
+            createdAt: comment.createdAt,
+            content: comment.content,
+            image: user.image,
+            name: user.name,
+        };
+        console.log("item999999999999");
+        console.log(item);
+        res.json(item);
     } catch (err) {
         res.send(err.message);
     }
 };
+
 // get all comments
 const getComments = async (req, res) => {
     const { _id } = req.params;
-    console.log("_id");
-    console.log(_id);
+
     try {
         const comments = await Comment.find({ _id }).limit(3);
+        // const user = await User.find({})
         console.log(comments);
         res.send(comments);
     } catch (err) {
@@ -56,15 +69,33 @@ const getOneComment = async (req, res) => {
         res.json(err.message);
     }
 };
+
 // get one comment
 const getCommentsByPost = async (req, res) => {
     const { postId } = req.query;
     const skip = parseInt(req.query.skip);
-    console.log(skip);
+
     try {
         const comments = await Comment.find({ postId }).skip(skip).limit(3);
+        console.log(comments);
 
-        res.send(comments);
+        const results = [];
+        for (let i = 0; i < comments.length; i++) {
+            const user = await User.findOne({
+                _id: comments[i].userId,
+            });
+
+            const item = {
+                postId: comments[i].postId,
+                createdAt: comments[i].createdAt,
+                image: user.image,
+                content: comments[i].content,
+                name: user.name,
+            };
+            results.push(item);
+        }
+
+        res.send(results);
     } catch (err) {
         res.json(err.message);
     }

@@ -9,8 +9,12 @@ const cors = require("cors");
 const postRoutes = require("./routes/postRoute");
 const commentRoute = require("./routes/commentRoute");
 const authRoute = require("./routes/authRoute");
+const suggestionRoute = require("./routes/suggestionRoute");
 // initialise the app
 const app = express();
+// to delete old results
+
+console.clear();
 
 //middlewares
 app.use(express.static("public"));
@@ -32,6 +36,8 @@ app.use("/home", (req, res) => {
 app.use("/auth", authRoute);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoute);
+
+app.use("/api/suggestions", suggestionRoute);
 
 //connect to the database
 mongoose

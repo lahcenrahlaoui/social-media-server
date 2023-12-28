@@ -1,12 +1,13 @@
+// imports
 const express = require("express");
 
+const { loginUser, signupUser } = require("../controllers/authController");
+const { upload } = require("../config");
+
+// config
 const router = express.Router();
 
-const { loginUser, signupUser } = require("../controllers/authController");
-
-
 router.post("/signin", loginUser);
-
-router.post("/signup", signupUser);
+router.post("/signup", upload.single("image"), signupUser);
 
 module.exports = router;

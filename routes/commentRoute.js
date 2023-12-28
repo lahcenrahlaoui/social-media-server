@@ -1,20 +1,42 @@
 const express = require("express");
 
+const {
+    getOneComment,
+    getComments,
+    getCommentsByPost,
+    createComment,
+} = require("../controllers/commentController");
+const { requireAuth } = require("../middlewares/requireAuth");
+
 const router = express.Router();
+// middleware
+router.use(requireAuth);
 
-const { getOneComment , getComments, getCommentsByPost, createComment } = require("../controllers/commentController");
+// create comments in the post
+router.post("/newComment/:postId", createComment);
 
-
-// get all posts
-router.post("/newComment/:postId/:userId", createComment);
+// all comments
 router.get("/", getComments);
+
+// get all comments in the post
 router.get("/post/", getCommentsByPost);
+
+// get only one comment by id
 router.get("/:_id", getOneComment);
 
+module.exports = router;
 
-
-
-
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 // // get one post
 // router.get("/:id", getOnePost);
 
@@ -51,5 +73,3 @@ router.get("/:_id", getOneComment);
 
 // // delete one post
 // router.delete("/:id", deletePost);
-
-module.exports = router;

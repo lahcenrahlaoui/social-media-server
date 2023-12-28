@@ -1,14 +1,10 @@
 const fs = require("fs");
 const mongoose = require("mongoose");
 const sharp = require("sharp");
-const User = require("../models/userModel");
-const { uploadToCloudinary } = require("../cloudinaryConfig");
 const jwt = require("jsonwebtoken");
 
-// var payload = {
-//     name: "Roger",
-//     role: "Admin",
-// };
+const User = require("../models/userModel");
+const { uploadToCloudinary } = require("../config");
 
 const jwtKey = process.env.JWT_KEY;
 const createToken = (_id) => {
@@ -24,6 +20,8 @@ const loginUser = async (req, res) => {
         const token = createToken(user._id);
         res.json({
             email,
+            image: user.image,
+            name: user.name,
             token,
         });
     } catch (error) {
@@ -33,14 +31,22 @@ const loginUser = async (req, res) => {
 
 // sign up
 const signupUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
+
+    console.log(email, password, name);
+
+    const path_normal = req.file.path;
+
+    const image = await uploadToCloudinary(path_normal);
 
     try {
-        const user = await User.signup(email, password);
+        const user = await User.signup(email, password, name, image);
         const token = createToken(user._id);
 
         res.json({
             email,
+            image,
+            name,
             token,
         });
     } catch (err) {
