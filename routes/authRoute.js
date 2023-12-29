@@ -2,7 +2,7 @@
 const express = require("express");
 
 const { loginUser, signupUser } = require("../controllers/authController");
-const { upload } = require("../config");
+const { upload } = require("../utils/config");
 
 // config
 const router = express.Router();

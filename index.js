@@ -31,7 +31,9 @@ console.clear();
 // app.use(cors(corsOptions))
 /////////////////////////////////////////////////////
 //middlewares
-app.use(express.static("public"));
+app.use("/public", express.static(path.join(__dirname, 'public')));
+
+// app.use(express.static("public"));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(

@@ -1,5 +1,5 @@
 const express = require("express");
-const { upload } = require("../config");
+const { upload } = require("../utils/config");
 const {
     getAllPosts,
     getOnePost,

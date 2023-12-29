@@ -4,7 +4,7 @@
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/userModel");
-const { uploadToCloudinary } = require("../config");
+const { uploadToCloudinary } = require("../utils/config");
 
 const jwtKey = process.env.JWT_KEY;
 const createToken = (_id) => {
