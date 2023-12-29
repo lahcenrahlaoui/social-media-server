@@ -1,5 +1,7 @@
 // resize image
-export const resizeImage = async (req, data) => {
+const jimp = require("jimp");
+const { uploadToCloudinary } = require("./config");
+const resizeImage = async (req, data) => {
     const size_thumbnail = {
         w: 5,
         h: 5,
@@ -31,21 +33,23 @@ export const resizeImage = async (req, data) => {
 
     data.image_small = await uploadToCloudinary(path_small);
 
-    // remove small image
-    fs.access(path_small, fs.F_OK, async (err, ac) => {
-        fs.unlink(path_small, (ferr, fc) => {
-            if (err) {
-                throw err;
-            }
-            console.log("Delete File successfully. ");
-        });
-    });
+    // // remove small image
+    // fs.access(path_small, fs.F_OK, async (err, ac) => {
+    //     fs.unlink(path_small, (ferr, fc) => {
+    //         if (err) {
+    //             throw err;
+    //         }
+    //         console.log("Delete File successfully. ");
+    //     });
+    // });
 
-    // remove thumbnail image
-    fs.unlink(path_thumbnail, (err) => {
-        if (err) {
-            throw err;
-        }
-        console.log("Delete File successfully thumbnail ");
-    });
+    // // remove thumbnail image
+    // fs.unlink(path_thumbnail, (err) => {
+    //     if (err) {
+    //         throw err;
+    //     }
+    //     console.log("Delete File successfully thumbnail ");
+    // });
 };
+
+module.exports = { resizeImage };

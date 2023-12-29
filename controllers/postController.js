@@ -112,15 +112,15 @@ const createPost = async (req, res) => {
         res.json(item);
 
         data.image = await uploadToCloudinary(path_normal);
-        // remove normal  image
-        fs.access(path_normal, fs.F_OK, async (err, ac) => {
-            fs.unlink(path_normal, (ferr, fc) => {
-                if (err) {
-                    throw err;
-                }
-                console.log("Delete File successfully. ");
-            });
-        });
+        // // remove normal  image
+        // fs.access(path_normal, fs.F_OK, async (err, ac) => {
+        //     fs.unlink(path_normal, (ferr, fc) => {
+        //         if (err) {
+        //             throw err;
+        //         }
+        //         console.log("Delete File successfully. ");
+        //     });
+        // });
 
         const postx = await Post.findOneAndUpdate({ _id: post._id }, data);
     } catch (err) {
