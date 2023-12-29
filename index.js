@@ -16,17 +16,27 @@ const app = express();
 // to delete old results
 
 console.clear();
+//cors 
+const whitelist = ["http://localhost:3000"]
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error("Not allowed by CORS"))
+    }
+  },
+  credentials: true,
+}
+
 
 //middlewares
 app.use(express.static("public"));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use(
-    cors({
-        origin: "https://social-media-client-blue.vercel.app",
-        credentials: true,
-    })
-);
+
+app.use(cors(corsOptions))
+
 app.set("trust proxy", 1);
 
 
