@@ -16,34 +16,27 @@ const app = express();
 // to delete old results
 
 console.clear();
-//cors/////////////////////////////////////////////// 
-// const whitelist = ["http://localhost:3000"]
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     if (!origin || whitelist.indexOf(origin) !== -1) {
-//       callback(null, true)
-//     } else {
-//       callback(new Error("Not allowed by CORS"))
-//     }
-//   },
-//   credentials: true,
-// }
-// app.use(cors(corsOptions))
-/////////////////////////////////////////////////////
-//middlewares
 
+//middlewares
 
 app.use(express.static("public"));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use(
-    cors({
-        origin: "https://social-media-client-blue.vercel.app",
-        credentials: true,
-    })
-);
-app.set("trust proxy", 1);
 
+
+if (process.env.NODE_ENV === "development") {
+ 
+    
+    app.use(cors());
+} else {
+    app.use(
+        cors({
+            origin: "https://social-media-client-blue.vercel.app",
+            credentials: true,
+        })
+    );
+    app.set("trust proxy", 1);
+}
 
 // constants
 const MONGO_URL = process.env.MONGO_URL;
@@ -55,7 +48,6 @@ app.use("/home", (req, res) => {
         message: "message sucsses",
     });
 });
-
 
 app.use("/auth", authRoute);
 app.use("/api/user", userRoute);
