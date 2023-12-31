@@ -20,7 +20,7 @@ const uploadToCloudinary = async (path) => {
 
 //  multer
 let storage;
-if (process.env.NODE_ENV) {
+if (process.env.NODE_ENV === 'development') {
     storage = multer.diskStorage({
         destination: function (req, file, cb) {
             cb(null, "./public/temp/");
