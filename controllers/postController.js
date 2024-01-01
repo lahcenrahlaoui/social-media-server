@@ -20,8 +20,8 @@ const getAllPosts = async (req, res) => {
             const x = await Post.find({ userId: following[i] });
             x.map((item) => posts.push(item));
         }
-       
-        
+        console.log("posts");
+        console.log(posts);
         // const posts = await Post.find({ userId: following[0] });
 
         const results = [];
