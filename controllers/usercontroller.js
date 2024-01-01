@@ -76,7 +76,35 @@ const getFollowingList = async (req, res) => {
     }
 };
 
+const getUserInformation = async (req, res) => {
+    const { allLikes: emails } = req.query;
+
+    try {
+        // const x = allLikes.map(async (email) => {
+        //     console.log(email);
+        //     const user = await User.findOne({
+        //         email,
+        //     });
+        //     return user;
+        // });
+
+        const users = [];
+        for (let i = 0; i < emails.length; i++) {
+            const user = await User.findOne({
+                email: emails[i],
+            }).select("image name");
+
+            users.push(user);
+        }
+
+        res.json(users);
+    } catch (e) {
+        res.json({ message: e.message });
+    }
+};
+
 module.exports = {
     setFollowingList,
     getFollowingList,
+    getUserInformation,
 };

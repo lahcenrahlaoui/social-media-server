@@ -34,7 +34,7 @@ const loginUser = async (req, res) => {
 const signupUser = async (req, res) => {
 
 
-    console.log("xxxxxxx")
+
     const { email, password, name } = req.body;
 
     
