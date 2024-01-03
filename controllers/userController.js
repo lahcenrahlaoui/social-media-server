@@ -1,3 +1,4 @@
+const Post = require("../models/postModel");
 const User = require("../models/userModel");
 
 const setFollowingList = async (req, res) => {
@@ -103,8 +104,42 @@ const getUserInformation = async (req, res) => {
     }
 };
 
+const getPostsFromUser = async (req, res) => {
+    console.log("Getting all posts");
+    const { _id } = req.params;
+    console.log(_id);
+    try {
+        const posts = await Post.find({ userId: _id });
+
+        const results = [];
+        for (let i = 0; i < posts.length; i++) {
+            const user = await User.findOne({ _id: posts[i].userId });
+            const item = {
+                _id: posts[i]._id,
+                content: posts[i].content,
+                tags: posts[i].tags,
+                image_small: posts[i].image_small,
+                image_thumbnail: posts[i].image_thumbnail,
+                image: posts[i].image,
+                comments: posts[i].comments,
+                createdAt: posts[i].createdAt,
+                likes: posts[i].likes,
+                name: user.name,
+                image_user: user.image,
+                userId: posts[i].userId,
+            };
+            results.push(item);
+        }
+
+        res.send(results.reverse());
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+};
+
 module.exports = {
     setFollowingList,
     getFollowingList,
     getUserInformation,
+    getPostsFromUser,
 };

@@ -14,7 +14,6 @@ const getAllPosts = async (req, res) => {
     try {
         const { following } = await User.findOne({ _id }).select("following");
 
-        
         const posts = [];
         for (let i = 0; i < following.length; i++) {
             const x = await Post.find({ userId: following[i] });
@@ -198,6 +197,7 @@ const updateLikes = async (req, res) => {
 
 const uploadImage = () => {};
 
+
 module.exports = {
     getAllPosts,
     getOnePost,
@@ -207,4 +207,5 @@ module.exports = {
     updateLikes,
     getOneImage,
     uploadImage,
+    
 };
