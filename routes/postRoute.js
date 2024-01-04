@@ -9,7 +9,6 @@ const {
     updateLikes,
     getOneImage,
     uploadImage,
-  
 } = require("../controllers/postController");
 const { requireAuth } = require("../middlewares/requireAuth");
 
@@ -23,7 +22,6 @@ router.get("/", getAllPosts);
 
 // get one post
 router.get("/:id", getOnePost);
-
 
 // get image one post
 router.get("/image/:_id", getOneImage);

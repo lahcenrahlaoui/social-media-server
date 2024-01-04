@@ -19,8 +19,7 @@ const getAllPosts = async (req, res) => {
             const x = await Post.find({ userId: following[i] });
             x.map((item) => posts.push(item));
         }
-        console.log("posts");
-        console.log(posts);
+
         // const posts = await Post.find({ userId: following[0] });
 
         const results = [];
@@ -43,7 +42,14 @@ const getAllPosts = async (req, res) => {
             results.push(item);
         }
 
-        res.send(results.reverse());
+        // sort posts is ascending order
+        const sortedResults = results.sort((a, b) => {
+            const aDate = new Date(a.createdAt);
+            const bDate = new Date(b.createdAt);
+            return Number(bDate) - Number(aDate);
+        });
+
+        res.send(sortedResults);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -197,7 +203,6 @@ const updateLikes = async (req, res) => {
 
 const uploadImage = () => {};
 
-
 module.exports = {
     getAllPosts,
     getOnePost,
@@ -207,5 +212,4 @@ module.exports = {
     updateLikes,
     getOneImage,
     uploadImage,
-    
 };
