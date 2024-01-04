@@ -77,7 +77,7 @@ const getFollowingList = async (req, res) => {
     }
 };
 
-const getUserInformation = async (req, res) => {
+const getUsersInformation = async (req, res) => {
     const { allLikes: emails } = req.query;
 
     try {
@@ -104,10 +104,28 @@ const getUserInformation = async (req, res) => {
     }
 };
 
-const getPostsFromUser = async (req, res) => {
-    console.log("Getting all posts");
+const getUserInformationById = async (req, res) => {
     const { _id } = req.params;
-    console.log(_id);
+
+    try {
+        const userData = await User.findOne({ _id });
+
+        console.log(userData);
+        const user = {
+            _id: userData._id,
+            name: userData.name,
+            email: userData.email,
+            image: userData.image,
+        };
+        res.json({ user });
+    } catch (e) {
+        res.json({ message: e.message });
+    }
+};
+
+const getPostsFromUser = async (req, res) => {
+    const { _id } = req.params;
+
     try {
         const posts = await Post.find({ userId: _id });
 
@@ -140,6 +158,7 @@ const getPostsFromUser = async (req, res) => {
 module.exports = {
     setFollowingList,
     getFollowingList,
-    getUserInformation,
+    getUsersInformation,
     getPostsFromUser,
+    getUserInformationById,
 };

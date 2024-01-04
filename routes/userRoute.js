@@ -1,7 +1,13 @@
 // imports
 const express = require("express");
 
-const { setFollowingList , getFollowingList , getUserInformation ,   getPostsFromUser  } = require("../controllers/userController");
+const {
+    setFollowingList,
+    getFollowingList,
+    getUsersInformation,
+    getUserInformationById,
+    getPostsFromUser,
+} = require("../controllers/userController");
 const { requireAuth } = require("../middlewares/requireAuth");
 
 // config
@@ -12,12 +18,12 @@ router.use(requireAuth);
 
 router.get("/get/following", getFollowingList);
 
-
 router.get("/get/posts/:_id", getPostsFromUser);
 
 router.patch("/set/following", setFollowingList);
 
- 
-router.get("/get/user-information", getUserInformation);
+router.get("/get/user-information", getUsersInformation);
+
+router.get("/get/user-information/:_id", getUserInformationById);
 
 module.exports = router;
