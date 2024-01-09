@@ -1,6 +1,3 @@
-
-
-
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/userModel");
@@ -32,12 +29,7 @@ const loginUser = async (req, res) => {
 
 // sign up
 const signupUser = async (req, res) => {
-
-
-
     const { email, password, name } = req.body;
-
-    
 
     const path_normal = req.file.path;
 
@@ -54,8 +46,8 @@ const signupUser = async (req, res) => {
             following: user.following,
             token,
         });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
+    } catch (error) {
+        res.json({ error: error.message });
     }
 };
 

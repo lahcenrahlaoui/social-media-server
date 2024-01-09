@@ -13,8 +13,8 @@ const suggestionRoute = require("./routes/suggestionRoute");
 const userRoute = require("./routes/userRoute");
 // initialise the app
 const app = express();
-// to delete old results
 
+// to delete old results
 console.clear();
 
 //middlewares
@@ -23,10 +23,7 @@ app.use(express.static("public"));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 
-
 if (process.env.NODE_ENV === "development") {
- 
-    
     app.use(cors());
 } else {
     app.use(
