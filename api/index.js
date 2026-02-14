@@ -70,21 +70,26 @@ function ensureDBConnection() {
   isConnecting = true;
   connectionPromise = (async () => {
     try {
-      if (!process.env.MONGO_URL) throw new Error("MONGO_URL not set");
+      if (!process.env.MONGO_URL) {
+        throw new Error("MONGO_URL environment variable is not set");
+      }
+
       await mongoose.connect(process.env.MONGO_URL, {
-        serverSelectionTimeoutMS: 3000,
+        serverSelectionTimeoutMS: 10000, // Increased from 3000 to allow more time
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 5000,
+        connectTimeoutMS: 10000, // Increased from 5000 to allow more time
         maxPoolSize: 1,
+        retryWrites: true,
       });
-      console.log("MongoDB Connected");
+
+      console.log("MongoDB Connected successfully");
       isConnecting = false;
       return true;
     } catch (error) {
       console.error("MongoDB connection error:", error.message);
       isConnecting = false;
       connectionPromise = null;
-      return false;
+      throw error; // Re-throw to allow caller to handle
     }
   })();
   return connectionPromise;
@@ -107,18 +112,33 @@ try {
   console.error("Error loading routes:", error);
 }
 
-// Middleware to ensure DB connection for API endpoints (non-blocking)
-app.use((req, res, next) => {
+// Middleware to ensure DB connection for API endpoints
+app.use(async (req, res, next) => {
   // Skip DB connection for simple routes
   if (req.path === "/" || req.path === "/home" || req.path === "/favicon.ico") {
     return next();
   }
 
-  // Ensure DB connection in background for API endpoints
+  // Ensure DB connection before proceeding for API endpoints
   if (req.path.startsWith("/auth") || req.path.startsWith("/api")) {
     const mongoose = getMongoose();
-    if (mongoose.connection.readyState !== 1 && !isConnecting) {
-      ensureDBConnection().catch(() => { });
+    if (mongoose.connection.readyState !== 1) {
+      try {
+        await ensureDBConnection();
+        // Verify connection is actually ready
+        if (mongoose.connection.readyState !== 1) {
+          return res.status(503).json({
+            error: "Database connection failed",
+            message: "Unable to connect to database. Please try again later."
+          });
+        }
+      } catch (error) {
+        console.error("Database connection error in middleware:", error);
+        return res.status(503).json({
+          error: "Database connection failed",
+          message: "Unable to connect to database. Please try again later."
+        });
+      }
     }
   }
   next();
