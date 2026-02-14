@@ -7,26 +7,39 @@ try {
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const cors = require("cors");
 
 const app = express();
+
+// CORS middleware - must be before bodyParser for preflight requests
+app.use((req, res, next) => {
+  // Get the origin from the request
+  const origin = req.headers.origin;
+
+  // Allow all origins (you can restrict this to specific domains in production)
+  // For credentials: true, you should specify actual origins, not "*"
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, authorization, Accept, X-Requested-With, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Max-Age", "86400"); // 24 hours
+  res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Type");
+
+  // Handle preflight requests immediately
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  next();
+});
 
 // Middleware
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-
-// CORS configuration for Vercel
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "authorization"],
-  credentials: true
-}));
-
-// Handle OPTIONS requests for CORS preflight
-app.options("*", (req, res) => {
-  res.status(200).end();
-});
 
 // Simple routes FIRST - these must respond immediately
 app.get("/", (req, res) => {
