@@ -41,12 +41,35 @@ app.use("/api/suggestions", suggestionRoute);
 
 // ===== MongoDB cached connection (VERY IMPORTANT in Vercel) =====
 
-let isConnected = false;
+let cachedConnection = null;
 
 async function connectDB() {
-  if (isConnected) {
-    console.log("MongoDB already connected");
+  // Check if mongoose is already connected
+  if (mongoose.connection.readyState === 1) {
     return;
+  }
+
+  // If connection is in progress, wait for it with timeout
+  if (mongoose.connection.readyState === 2) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("Connection timeout"));
+      }, 8000);
+
+      mongoose.connection.once("connected", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      mongoose.connection.once("error", (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+    });
+  }
+
+  // If we have a cached connection promise, return it
+  if (cachedConnection) {
+    return cachedConnection;
   }
 
   try {
@@ -54,16 +77,29 @@ async function connectDB() {
       throw new Error("MONGO_URL environment variable is not set");
     }
 
-    await mongoose.connect(process.env.MONGO_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Create connection promise with aggressive timeouts for serverless
+    cachedConnection = Promise.race([
+      mongoose.connect(process.env.MONGO_URL, {
+        serverSelectionTimeoutMS: 5000, // 5 seconds to select server
+        socketTimeoutMS: 45000, // 45 seconds socket timeout
+        connectTimeoutMS: 8000, // 8 seconds connection timeout
+        maxPoolSize: 1, // Limit connections in serverless
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("MongoDB connection timeout after 8 seconds")), 8000)
+      ),
+    ]);
 
-    isConnected = true;
-    console.log("MongoDB Connected");
+    await cachedConnection;
+    console.log("MongoDB Connected successfully");
+    cachedConnection = null; // Clear cache on success
   } catch (error) {
-    console.error("MongoDB connection error:", error);
-    isConnected = false;
+    console.error("MongoDB connection error:", error.message);
+    cachedConnection = null; // Clear cache on error
+    // Reset connection state
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close().catch(() => { });
+    }
     throw error;
   }
 }
@@ -71,7 +107,20 @@ async function connectDB() {
 // wrapper so every request ensures DB connection
 const handler = async (req, res) => {
   try {
+    // Ensure DB connection with timeout
     await connectDB();
+  } catch (error) {
+    console.error("DB connection error:", error.message);
+    // If DB connection fails, return error immediately
+    if (!res.headersSent) {
+      return res.status(503).json({
+        error: "Service Unavailable",
+        message: "Database connection failed. Please try again later."
+      });
+    }
+  }
+
+  try {
     return await app(req, res);
   } catch (error) {
     console.error("Handler error:", error);
