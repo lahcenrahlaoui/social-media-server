@@ -128,20 +128,30 @@ function ensureDBConnection() {
       const mongoUrl = process.env.MONGO_URL.trim();
       console.log("Attempting to connect to MongoDB...");
 
+      // Connect to MongoDB
       await mongoose.connect(mongoUrl, {
-        serverSelectionTimeoutMS: 15000, // Increased timeout
+        serverSelectionTimeoutMS: 15000,
         socketTimeoutMS: 45000,
         connectTimeoutMS: 15000,
         maxPoolSize: 1,
         minPoolSize: 0,
         retryWrites: true,
-        bufferCommands: false,
+        bufferCommands: true, // Allow buffering to prevent errors during connection
         bufferMaxEntries: 0,
       });
 
+      // Wait for connection to be fully ready (readyState === 1)
+      // This ensures the connection is ready before any queries can execute
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait (50 * 100ms)
+      while (mongoose.connection.readyState !== 1 && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+
       // Verify connection is actually ready
       if (mongoose.connection.readyState !== 1) {
-        throw new Error("Connection established but not ready");
+        throw new Error("Connection established but not ready after waiting");
       }
 
       console.log("MongoDB Connected successfully");
@@ -196,6 +206,14 @@ app.use(async (req, res, next) => {
     if (readyState !== 1) {
       try {
         await ensureDBConnection();
+
+        // Wait a bit more to ensure connection is truly ready for queries
+        // This is especially important with bufferCommands settings
+        let waitAttempts = 0;
+        while (mongoose.connection.readyState !== 1 && waitAttempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          waitAttempts++;
+        }
 
         // Double-check connection state after attempting connection
         const newReadyState = mongoose.connection.readyState;
