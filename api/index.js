@@ -14,7 +14,19 @@ const app = express();
 // Middleware
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], credentials: true }));
+
+// CORS configuration for Vercel
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "authorization"],
+  credentials: true
+}));
+
+// Handle OPTIONS requests for CORS preflight
+app.options("*", (req, res) => {
+  res.status(200).end();
+});
 
 // Simple routes FIRST - these must respond immediately
 app.get("/", (req, res) => {
@@ -119,7 +131,5 @@ app.use((err, req, res, next) => {
 });
 
 // Export Vercel-compatible handler (no serverless-http needed)
-// Vercel expects a function that takes (req, res)
-module.exports = (req, res) => {
-  return app(req, res);
-};
+// Express app is callable as a function: app(req, res)
+module.exports = app;
