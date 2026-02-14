@@ -16,7 +16,7 @@ const userRoute = require("../routes/userRoute");
 const app = express();
 
 // middlewares
-app.use(express.static(path.join(__dirname, "../public")));
+// Note: Static file serving removed for serverless - files should be served via CDN
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 
@@ -79,16 +79,16 @@ function ensureDBConnection() {
 ensureDBConnection().catch(() => { });
 
 // Middleware to ensure DB connection for routes that need it (placed before routes)
-app.use(async (req, res, next) => {
-  // For health check and static routes, skip DB check
-  if (req.path === "/home" || req.path.startsWith("/public")) {
+app.use((req, res, next) => {
+  // For health check, root, and static routes, skip DB check entirely
+  if (req.path === "/" || req.path === "/home" || req.path.startsWith("/public") || req.path === "/favicon.ico") {
     return next();
   }
 
-  // Try to ensure connection, but don't block
+  // For other routes, try to ensure connection in background (non-blocking)
   const isConnected = mongoose.connection.readyState === 1;
-  if (!isConnected) {
-    // Start connection in background, but don't wait
+  if (!isConnected && !isConnecting) {
+  // Start connection in background, but don't wait - fire and forget
     ensureDBConnection().catch(() => { });
   }
 
@@ -96,6 +96,10 @@ app.use(async (req, res, next) => {
 });
 
 // routes
+app.get("/", (req, res) => {
+  res.json({ message: "API is running", status: "ok" });
+});
+
 app.get("/home", (req, res) => {
   res.json({ message: "message success" });
 });
@@ -106,20 +110,22 @@ app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoute);
 app.use("/api/suggestions", suggestionRoute);
 
-// wrapper for serverless
-const handler = async (req, res) => {
-  try {
-    return await app(req, res);
-  } catch (error) {
-    console.error("Handler error:", error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        error: "Internal Server Error",
-        message: error.message
-      });
-    }
-    return res;
-  }
-};
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found", path: req.path });
+});
 
-module.exports = serverless(handler);
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Express error:", err);
+  if (!res.headersSent) {
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: err.message
+    });
+  }
+});
+
+// wrapper for serverless
+// serverless-http wraps the Express app, so we just pass the app directly
+module.exports = serverless(app);
