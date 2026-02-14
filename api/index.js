@@ -3,19 +3,20 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 const serverless = require("serverless-http");
 
 // routes
-const postRoutes = require("../../routes/postRoute");
-const commentRoute = require("../../routes/commentRoute");
-const authRoute = require("../../routes/authRoute");
-const suggestionRoute = require("../../routes/suggestionRoute");
-const userRoute = require("../../routes/userRoute");
+const postRoutes = require("../routes/postRoute");
+const commentRoute = require("../routes/commentRoute");
+const authRoute = require("../routes/authRoute");
+const suggestionRoute = require("../routes/suggestionRoute");
+const userRoute = require("../routes/userRoute");
 
 const app = express();
 
 // middlewares
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 
@@ -43,21 +44,45 @@ app.use("/api/suggestions", suggestionRoute);
 let isConnected = false;
 
 async function connectDB() {
-  if (isConnected) return;
+  if (isConnected) {
+    console.log("MongoDB already connected");
+    return;
+  }
 
-  await mongoose.connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  try {
+    if (!process.env.MONGO_URL) {
+      throw new Error("MONGO_URL environment variable is not set");
+    }
 
-  isConnected = true;
-  console.log("Mongo Connected");
+    await mongoose.connect(process.env.MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    isConnected = true;
+    console.log("MongoDB Connected");
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    isConnected = false;
+    throw error;
+  }
 }
 
 // wrapper so every request ensures DB connection
 const handler = async (req, res) => {
-  await connectDB();
-  return app(req, res);
+  try {
+    await connectDB();
+    return await app(req, res);
+  } catch (error) {
+    console.error("Handler error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: "Internal Server Error",
+        message: error.message
+      });
+    }
+    return res;
+  }
 };
 
 module.exports = serverless(handler);
