@@ -8,7 +8,6 @@ try {
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const serverless = require("serverless-http");
 
 const app = express();
 
@@ -119,5 +118,8 @@ app.use((err, req, res, next) => {
   }
 });
 
-// Export serverless handler
-module.exports = serverless(app);
+// Export Vercel-compatible handler (no serverless-http needed)
+// Vercel expects a function that takes (req, res)
+module.exports = (req, res) => {
+  return app(req, res);
+};

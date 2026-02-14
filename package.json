@@ -28,7 +28,6 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.0.2",
-    "serverless-http": "^4.0.0",
     "validator": "^13.11.0"
   }
 }
