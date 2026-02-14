@@ -59,6 +59,9 @@ function getMongoose() {
   if (!mongoose) {
     mongoose = require("mongoose");
 
+    // Set buffer timeout globally to prevent buffering timeout errors
+    mongoose.set('bufferTimeoutMS', 30000); // 30 seconds
+
     // Set up connection event listeners
     mongoose.connection.on("error", (err) => {
       console.error("MongoDB connection error:", err);
@@ -128,30 +131,56 @@ function ensureDBConnection() {
       const mongoUrl = process.env.MONGO_URL.trim();
       console.log("Attempting to connect to MongoDB...");
 
-      // Connect to MongoDB
-      await mongoose.connect(mongoUrl, {
-        serverSelectionTimeoutMS: 15000,
+      // Set up connection event listener BEFORE connecting
+      const connectionReady = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Connection timeout: Did not connect within 25 seconds"));
+        }, 25000);
+
+        const onConnected = () => {
+          clearTimeout(timeout);
+          mongoose.connection.removeListener("error", onError);
+          console.log("MongoDB 'connected' event fired");
+          resolve();
+        };
+
+        const onError = (err) => {
+          clearTimeout(timeout);
+          mongoose.connection.removeListener("connected", onConnected);
+          reject(err);
+        };
+
+        // Check if already connected
+        if (mongoose.connection.readyState === 1) {
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          mongoose.connection.once("connected", onConnected);
+          mongoose.connection.once("error", onError);
+        }
+      });
+
+      // Start the connection
+      const connectPromise = mongoose.connect(mongoUrl, {
+        serverSelectionTimeoutMS: 20000,
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 15000,
+        connectTimeoutMS: 20000,
         maxPoolSize: 1,
         minPoolSize: 0,
         retryWrites: true,
-        bufferCommands: true, // Allow buffering to prevent errors during connection
+        bufferCommands: true,
         bufferMaxEntries: 0,
+      }).catch(err => {
+        // If connect fails, reject the connectionReady promise
+        throw err;
       });
 
-      // Wait for connection to be fully ready (readyState === 1)
-      // This ensures the connection is ready before any queries can execute
-      let attempts = 0;
-      const maxAttempts = 50; // 5 seconds max wait (50 * 100ms)
-      while (mongoose.connection.readyState !== 1 && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
+      // Wait for both the connect() promise AND the 'connected' event
+      await Promise.all([connectPromise, connectionReady]);
 
-      // Verify connection is actually ready
+      // Final verification - ensure readyState is 1
       if (mongoose.connection.readyState !== 1) {
-        throw new Error("Connection established but not ready after waiting");
+        throw new Error(`Connection not ready after connect. State: ${mongoose.connection.readyState}`);
       }
 
       console.log("MongoDB Connected successfully");
@@ -210,8 +239,9 @@ app.use(async (req, res, next) => {
         // Wait a bit more to ensure connection is truly ready for queries
         // This is especially important with bufferCommands settings
         let waitAttempts = 0;
-        while (mongoose.connection.readyState !== 1 && waitAttempts < 10) {
-          await new Promise(resolve => setTimeout(resolve, 50));
+        const maxWaitAttempts = 50; // 5 seconds max wait (50 * 100ms)
+        while (mongoose.connection.readyState !== 1 && waitAttempts < maxWaitAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 100));
           waitAttempts++;
         }
 
