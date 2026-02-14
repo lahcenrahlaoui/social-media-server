@@ -58,38 +58,106 @@ let isConnecting = false;
 function getMongoose() {
   if (!mongoose) {
     mongoose = require("mongoose");
+
+    // Set up connection event listeners
+    mongoose.connection.on("error", (err) => {
+      console.error("MongoDB connection error:", err);
+      isConnecting = false;
+      connectionPromise = null;
+    });
+
+    mongoose.connection.on("disconnected", () => {
+      console.log("MongoDB disconnected");
+      isConnecting = false;
+      connectionPromise = null;
+    });
+
+    mongoose.connection.on("connected", () => {
+      console.log("MongoDB connected");
+      isConnecting = false;
+    });
   }
   return mongoose;
 }
 
 function ensureDBConnection() {
   const mongoose = getMongoose();
-  if (mongoose.connection.readyState === 1) return Promise.resolve();
-  if (connectionPromise && isConnecting) return connectionPromise;
+
+  // Check if already connected
+  if (mongoose.connection.readyState === 1) {
+    return Promise.resolve();
+  }
+
+  // If already connecting, return the existing promise
+  if (connectionPromise && isConnecting) {
+    return connectionPromise;
+  }
+
+  // Check if connection is in a bad state and needs to be reset
+  if (mongoose.connection.readyState === 2 || mongoose.connection.readyState === 3) {
+    // Connecting or disconnecting - wait a bit and try again
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (mongoose.connection.readyState === 1) {
+          resolve();
+        } else {
+          ensureDBConnection().then(resolve).catch(reject);
+        }
+      }, 100);
+    });
+  }
 
   isConnecting = true;
   connectionPromise = (async () => {
     try {
       if (!process.env.MONGO_URL) {
-        throw new Error("MONGO_URL environment variable is not set");
+        const error = new Error("MONGO_URL environment variable is not set");
+        console.error("Database configuration error:", error.message);
+        throw error;
       }
 
-      await mongoose.connect(process.env.MONGO_URL, {
-        serverSelectionTimeoutMS: 10000, // Increased from 3000 to allow more time
+      // Close existing connection if in a bad state
+      if (mongoose.connection.readyState !== 0) {
+        try {
+          await mongoose.connection.close();
+        } catch (closeError) {
+          // Ignore close errors
+        }
+      }
+
+      const mongoUrl = process.env.MONGO_URL.trim();
+      console.log("Attempting to connect to MongoDB...");
+
+      await mongoose.connect(mongoUrl, {
+        serverSelectionTimeoutMS: 15000, // Increased timeout
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 10000, // Increased from 5000 to allow more time
+        connectTimeoutMS: 15000,
         maxPoolSize: 1,
+        minPoolSize: 0,
         retryWrites: true,
+        bufferCommands: false,
+        bufferMaxEntries: 0,
       });
+
+      // Verify connection is actually ready
+      if (mongoose.connection.readyState !== 1) {
+        throw new Error("Connection established but not ready");
+      }
 
       console.log("MongoDB Connected successfully");
       isConnecting = false;
       return true;
     } catch (error) {
       console.error("MongoDB connection error:", error.message);
+      console.error("Error details:", {
+        name: error.name,
+        code: error.code,
+        message: error.message,
+        mongoUrl: process.env.MONGO_URL ? "Set (hidden)" : "Not set"
+      });
       isConnecting = false;
       connectionPromise = null;
-      throw error; // Re-throw to allow caller to handle
+      throw error;
     }
   })();
   return connectionPromise;
@@ -122,21 +190,42 @@ app.use(async (req, res, next) => {
   // Ensure DB connection before proceeding for API endpoints
   if (req.path.startsWith("/auth") || req.path.startsWith("/api")) {
     const mongoose = getMongoose();
-    if (mongoose.connection.readyState !== 1) {
+    const readyState = mongoose.connection.readyState;
+
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    if (readyState !== 1) {
       try {
         await ensureDBConnection();
-        // Verify connection is actually ready
-        if (mongoose.connection.readyState !== 1) {
+
+        // Double-check connection state after attempting connection
+        const newReadyState = mongoose.connection.readyState;
+        if (newReadyState !== 1) {
+          console.error(`Connection state after ensureDBConnection: ${newReadyState}`);
           return res.status(503).json({
             error: "Database connection failed",
-            message: "Unable to connect to database. Please try again later."
+            message: "Unable to connect to database. Please try again later.",
+            details: process.env.MONGO_URL ? "Connection string is configured" : "MONGO_URL environment variable is missing"
           });
         }
       } catch (error) {
-        console.error("Database connection error in middleware:", error);
+        console.error("Database connection error in middleware:", {
+          message: error.message,
+          name: error.name,
+          code: error.code,
+          path: req.path
+        });
+
+        // Provide more helpful error message
+        let errorMessage = "Unable to connect to database. Please try again later.";
+        if (error.message.includes("MONGO_URL")) {
+          errorMessage = "Database configuration error: MONGO_URL environment variable is not set.";
+        } else if (error.message.includes("timeout") || error.code === "ETIMEDOUT") {
+          errorMessage = "Database connection timeout. Please check your network connection and try again.";
+        }
+
         return res.status(503).json({
           error: "Database connection failed",
-          message: "Unable to connect to database. Please try again later."
+          message: errorMessage
         });
       }
     }
