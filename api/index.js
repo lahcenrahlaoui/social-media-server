@@ -45,15 +45,13 @@ let isConnected = false;
 async function connectDB() {
   if (isConnected) return;
 
-  ```
-await mongoose.connect(process.env.MONGO_URL, {
+  await mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-});
+  });
 
-isConnected = true;
-console.log("Mongo Connected");
-```;
+  isConnected = true;
+  console.log("Mongo Connected");
 }
 
 // wrapper so every request ensures DB connection
