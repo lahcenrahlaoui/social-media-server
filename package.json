@@ -1,18 +1,19 @@
 {
   "name": "social-media",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Social media API serverless function",
+  "main": "api/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "server": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "vercel-build": "echo 'No build step required'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": "24.x"
+    "node": "20.x"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

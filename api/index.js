@@ -1,54 +1,56 @@
-require("dotenv").config();
+// Load environment variables (non-blocking)
+try {
+  require("dotenv").config();
+} catch (e) {
+  // Ignore - Vercel provides env vars
+}
+
 const express = require("express");
 const bodyParser = require("body-parser");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const serverless = require("serverless-http");
 
 const app = express();
 
-// middlewares
-// Note: Static file serving removed for serverless - files should be served via CDN
+// Middleware
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
+app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], credentials: true }));
 
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    credentials: true,
-  }),
-);
+// Simple routes FIRST - these must respond immediately
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "API is running", status: "ok" });
+});
 
-// ===== MongoDB cached connection (VERY IMPORTANT in Vercel) =====
+app.get("/home", (req, res) => {
+  res.status(200).json({ message: "message success" });
+});
 
+// MongoDB - lazy loaded only when needed
+let mongoose = null;
 let connectionPromise = null;
 let isConnecting = false;
 
+function getMongoose() {
+  if (!mongoose) {
+    mongoose = require("mongoose");
+  }
+  return mongoose;
+}
+
 function ensureDBConnection() {
-  // If already connected, return immediately
-  if (mongoose.connection.readyState === 1) {
-    return Promise.resolve();
-  }
+  const mongoose = getMongoose();
+  if (mongoose.connection.readyState === 1) return Promise.resolve();
+  if (connectionPromise && isConnecting) return connectionPromise;
 
-  // If connection is in progress, return the existing promise
-  if (connectionPromise && isConnecting) {
-    return connectionPromise;
-  }
-
-  // Start new connection attempt (non-blocking)
   isConnecting = true;
   connectionPromise = (async () => {
     try {
-      if (!process.env.MONGO_URL) {
-        throw new Error("MONGO_URL environment variable is not set");
-      }
-
-      // Use very aggressive timeouts for serverless
+      if (!process.env.MONGO_URL) throw new Error("MONGO_URL not set");
       await mongoose.connect(process.env.MONGO_URL, {
-        serverSelectionTimeoutMS: 3000, // 3 seconds
+        serverSelectionTimeoutMS: 3000,
         socketTimeoutMS: 45000,
-        connectTimeoutMS: 5000, // 5 seconds
+        connectTimeoutMS: 5000,
         maxPoolSize: 1,
       });
       console.log("MongoDB Connected");
@@ -61,16 +63,14 @@ function ensureDBConnection() {
       return false;
     }
   })();
-
   return connectionPromise;
 }
 
-// Lazy load routes only when needed
+// Routes - lazy loaded
 let routesLoaded = false;
 function loadRoutes() {
   if (routesLoaded) return;
   routesLoaded = true;
-
   try {
     const authRoute = require("../routes/authRoute");
     const userRoute = require("../routes/userRoute");
@@ -88,32 +88,21 @@ function loadRoutes() {
   }
 }
 
-// routes - define simple routes first (these don't need DB)
-app.get("/", (req, res) => {
-  res.json({ message: "API is running", status: "ok" });
-});
-
-app.get("/home", (req, res) => {
-  res.json({ message: "message success" });
-});
-
-// Middleware: lazy load routes and ensure DB connection for API routes
+// Middleware to lazy load routes and DB for API endpoints
 app.use((req, res, next) => {
-  // For health check, root, and static routes, skip everything
-  if (req.path === "/" || req.path === "/home" || req.path.startsWith("/public") || req.path === "/favicon.ico") {
+  // Skip everything for simple routes
+  if (req.path === "/" || req.path === "/home" || req.path === "/favicon.ico") {
     return next();
   }
 
-  // Load routes lazily for API endpoints
+  // Load routes and DB for API endpoints
   if (req.path.startsWith("/auth") || req.path.startsWith("/api")) {
     loadRoutes();
-
-    // Try to ensure DB connection in background (non-blocking)
+    const mongoose = getMongoose();
     if (mongoose.connection.readyState !== 1 && !isConnecting) {
       ensureDBConnection().catch(() => { });
     }
   }
-
   next();
 });
 
@@ -126,13 +115,9 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("Express error:", err);
   if (!res.headersSent) {
-    res.status(500).json({
-      error: "Internal Server Error",
-      message: err.message
-    });
+    res.status(500).json({ error: "Internal Server Error", message: err.message });
   }
 });
 
-// wrapper for serverless
-// serverless-http wraps the Express app, so we just pass the app directly
+// Export serverless handler
 module.exports = serverless(app);
