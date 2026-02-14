@@ -90,38 +90,32 @@ function ensureDBConnection() {
   return connectionPromise;
 }
 
-// Routes - lazy loaded
-let routesLoaded = false;
-function loadRoutes() {
-  if (routesLoaded) return;
-  routesLoaded = true;
-  try {
-    const authRoute = require("../routes/authRoute");
-    const userRoute = require("../routes/userRoute");
-    const postRoutes = require("../routes/postRoute");
-    const commentRoute = require("../routes/commentRoute");
-    const suggestionRoute = require("../routes/suggestionRoute");
+// Load routes immediately (routes are lightweight, mongoose is the heavy one)
+try {
+  const authRoute = require("../routes/authRoute");
+  const userRoute = require("../routes/userRoute");
+  const postRoutes = require("../routes/postRoute");
+  const commentRoute = require("../routes/commentRoute");
+  const suggestionRoute = require("../routes/suggestionRoute");
 
-    app.use("/auth", authRoute);
-    app.use("/api/user", userRoute);
-    app.use("/api/posts", postRoutes);
-    app.use("/api/comments", commentRoute);
-    app.use("/api/suggestions", suggestionRoute);
-  } catch (error) {
-    console.error("Error loading routes:", error);
-  }
+  app.use("/auth", authRoute);
+  app.use("/api/user", userRoute);
+  app.use("/api/posts", postRoutes);
+  app.use("/api/comments", commentRoute);
+  app.use("/api/suggestions", suggestionRoute);
+} catch (error) {
+  console.error("Error loading routes:", error);
 }
 
-// Middleware to lazy load routes and DB for API endpoints
+// Middleware to ensure DB connection for API endpoints (non-blocking)
 app.use((req, res, next) => {
-  // Skip everything for simple routes
+  // Skip DB connection for simple routes
   if (req.path === "/" || req.path === "/home" || req.path === "/favicon.ico") {
     return next();
   }
 
-  // Load routes and DB for API endpoints
+  // Ensure DB connection in background for API endpoints
   if (req.path.startsWith("/auth") || req.path.startsWith("/api")) {
-    loadRoutes();
     const mongoose = getMongoose();
     if (mongoose.connection.readyState !== 1 && !isConnecting) {
       ensureDBConnection().catch(() => { });
